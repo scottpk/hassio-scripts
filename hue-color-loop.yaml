@@ -1,0 +1,8 @@
+set_hue_to_color_loop:
+  alias: Set Hue to Color Loop
+  sequence:
+  - service: mqtt.publish
+    data:
+      topic: zigbee2mqtt/Color Lamp/set
+      payload: '{"hue_move":20}'
+  mode: single
