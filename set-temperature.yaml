@@ -1,7 +1,6 @@
 set_the_thermostat_based_on_real_feel:
   alias: Set the thermostat based on feel
-  description: Set the thermostat based on perceived temperature, derived using humidity
-    and the simplified Heat Index equation (https://www.wpc.ncep.noaa.gov/html/heatindex_equation.shtml)
+  description: Set the thermostat based on perceived temperature, derived using humidity and the simplified Heat Index equation (https://www.wpc.ncep.noaa.gov/html/heatindex_equation.shtml)
   fields:
     trg_thermostat:
       name: Thermostat
@@ -58,18 +57,16 @@ set_the_thermostat_based_on_real_feel:
         entity:
           device_class: temperature
   variables:
-    incoming_tmp: '{{ ((state_attr(trg_thermostat, "current_temperature") | float))
-      }}'
-    bias: '{{(incoming_tmp - (states(temp_sensor) | float)) | round(0)}}'
-    bias_low: '{{(incoming_tmp - (state_attr(temp_sensor,"min_value") | float)) |
-      round(0)}}'
-    bias_high: '{{(incoming_tmp - (state_attr(temp_sensor,"max_value") | float)) |
-      round(0)}}'
+    incoming_tmp: '{{ ((state_attr(trg_thermostat, "current_temperature") | float)) }}'
+    temp_min_val: '{{(state_attr(temp_sensor,"min_value") | float)}}'
+    temp_max_val: '{{(state_attr(temp_sensor,"max_value") | float)}}'
+    temp_val: '{{(states(temp_sensor) | float)}}'
+    bias: '{{(incoming_tmp - temp_val) | round(0)}}'
+    bias_low: '{{(incoming_tmp - ((temp_min_val+temp_val)/2.0)) | round(0)}}'
+    bias_high: '{{(incoming_tmp - ((temp_max_val+temp_val)/2.0)) | round(0)}}'
     humidity_val: '{{(states(humidity_target) | float)}}'
-    high_tmp: '{{((((2.0 * (t_perceived_high | float)) - (0.094*humidity_val) + 20.6)/2.2))
-      + bias_high}}'
-    low_tmp: '{{((((2.0 * (t_perceived_low| float)) - (0.094*humidity_val) + 20.6)/2.2))
-      + bias_low}}'
+    high_tmp: '{{((((2.0 * (t_perceived_high | float)) - (0.094*humidity_val) + 20.6)/2.2)) + bias_high}}'
+    low_tmp: '{{((((2.0 * (t_perceived_low| float)) - (0.094*humidity_val) + 20.6)/2.2)) + bias_low}}'
   sequence:
   - service: climate.set_temperature
     data:
