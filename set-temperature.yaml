@@ -58,15 +58,15 @@ set_the_thermostat_based_on_real_feel:
           device_class: temperature
   variables:
     incoming_tmp: '{{ ((state_attr(trg_thermostat, "current_temperature") | float)) }}'
-    temp_min_val: '{{(state_attr(temp_sensor,"min_value") | float)}}'
-    temp_max_val: '{{(state_attr(temp_sensor,"max_value") | float)}}'
-    temp_val: '{{(states(temp_sensor) | float)}}'
-    bias: '{{(incoming_tmp - temp_val) | round(0)}}'
-    bias_low: '{{(incoming_tmp - ((temp_min_val+temp_val)/2.0)) | round(0)}}'
-    bias_high: '{{(incoming_tmp - ((temp_max_val+temp_val)/2.0)) | round(0)}}'
+    temp_in: '{{states(temp_sensor) | float}}'
+    temp_val: '{{(temp_in) }}'
+    sensorct: '{{state_attr(temp_sensor,"count_sensors") | float}}'
+    mean_tmp: '{{((temp_val * sensorct) + incoming_tmp) / (sensorct + 1.0)}}'
     humidity_val: '{{(states(humidity_target) | float)}}'
-    high_tmp: '{{((((2.0 * (t_perceived_high | float)) - (0.094*humidity_val) + 20.6)/2.2)) + bias_high}}'
-    low_tmp: '{{((((2.0 * (t_perceived_low| float)) - (0.094*humidity_val) + 20.6)/2.2)) + bias_low}}'
+    #bias: '{{(incoming_tmp - mean_tmp)}}'
+    bias: '{{((((2.0 * incoming_tmp) - (0.094*humidity_val) + 20.6)/2.2)) - ((((2.0 * mean_tmp) - (0.094*humidity_val) + 20.6)/2.2))}}'
+    high_tmp: '{{((((2.0 * (t_perceived_high | float)) - (0.094*humidity_val) + 20.6)/2.2)) + bias}}'
+    low_tmp: '{{((((2.0 * (t_perceived_low| float)) - (0.094*humidity_val) + 20.6)/2.2)) + bias}}'
   sequence:
   - service: climate.set_temperature
     data:
