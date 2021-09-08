@@ -58,15 +58,19 @@ set_the_thermostat_based_on_real_feel:
           device_class: temperature
   variables:
     incoming_tmp: '{{ ((state_attr(trg_thermostat, "current_temperature") | float)) }}'
-    temp_in: '{{states(temp_sensor) | float}}'
-    temp_val: '{{(temp_in) }}'
+    temp_val: '{{states(temp_sensor) | float}}'
     sensorct: '{{state_attr(temp_sensor,"count_sensors") | float}}'
     mean_tmp: '{{((temp_val * sensorct) + incoming_tmp) / (sensorct + 1.0)}}'
     humidity_val: '{{(states(humidity_target) | float)}}'
-    #bias: '{{(incoming_tmp - mean_tmp)}}'
-    bias: '{{((((2.0 * incoming_tmp) - (0.094*humidity_val) + 20.6)/2.2)) - ((((2.0 * mean_tmp) - (0.094*humidity_val) + 20.6)/2.2))}}'
-    high_tmp: '{{((((2.0 * (t_perceived_high | float)) - (0.094*humidity_val) + 20.6)/2.2)) + bias}}'
-    low_tmp: '{{((((2.0 * (t_perceived_low| float)) - (0.094*humidity_val) + 20.6)/2.2)) + bias}}'
+    bias: '{{(incoming_tmp - mean_tmp) * 1.1}}'
+    # HI = 0.5 * {T + 61.0 + [(T-68.0)*1.2] + (RH*0.094)}
+    # HI = 0.5 * {T + 61.0 + (1.2T - 81.6) + (RH*0.094)}
+    # HI = 0.5 * {2.2T - 20.6 + (RH*0.094)}
+    # HI = 1.1T - 10.3 + (RH*0.047)
+    # HI + 10.3 - (RH*0.047)= 1.1T
+    # (HI + 10.3 - (RH*0.047))/1.1 = T
+    high_tmp: '{{((((t_perceived_high | float) + bias) + 10.3 - (0.047*humidity_val))/1.1)}}'
+    low_tmp: '{{((((t_perceived_low | float) + bias) + 10.3 - (0.047*humidity_val))/1.1)}}'
   sequence:
   - service: climate.set_temperature
     data:
