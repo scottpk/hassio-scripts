@@ -72,6 +72,9 @@ set_the_thermostat_based_on_real_feel:
     high_tmp: '{{((((t_perceived_high | float) + bias) + 10.3 - (0.047*humidity_val))/1.1)}}'
     low_tmp: '{{((((t_perceived_low | float) + bias) + 10.3 - (0.047*humidity_val))/1.1)}}'
   sequence:
+  - wait_template: '{{ state_attr(trg_thermostat,"hvac_action") == None }}'
+    timeout: '00:00:30'
+    continue_on_timeout: true
   - service: climate.set_temperature
     data:
       target_temp_high: '{{high_tmp | round(0)}}'
