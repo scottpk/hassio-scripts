@@ -59,26 +59,32 @@ set_the_thermostat_based_on_real_feel:
   variables:
     incoming_tmp: '{{ ((state_attr(trg_thermostat, "current_temperature") | float)) }}'
     temp_val: '{{states(temp_sensor) | float}}'
+    temp_max: '{{state_attr(temp_sensor,"max_value") | float}}'
+    temp_min: '{{state_attr(temp_sensor,"min_value") | float}}'
     sensorct: '{{state_attr(temp_sensor,"count_sensors") | float}}'
     mean_tmp: '{{((temp_val * sensorct) + incoming_tmp) / (sensorct + 1.0)}}'
     humidity_val: '{{(states(humidity_target) | float)}}'
+    humidity_max: '{{(state_attr(temp_sensor,"max_value") | float)}}'
+    humidity_min: '{{(state_attr(temp_sensor,"min_value") | float)}}'
     bias: '{{(incoming_tmp - mean_tmp) * 1.1}}'
+    bias_high: '{{(incoming_tmp - temp_max) * 1.1}}'
+    bias_low: '{{(incoming_tmp - temp_min) * 1.1}}'
     # HI = 0.5 * {T + 61.0 + [(T-68.0)*1.2] + (RH*0.094)}
     # HI = 0.5 * {T + 61.0 + (1.2T - 81.6) + (RH*0.094)}
     # HI = 0.5 * {2.2T - 20.6 + (RH*0.094)}
     # HI = 1.1T - 10.3 + (RH*0.047)
     # HI + 10.3 - (RH*0.047)= 1.1T
     # (HI + 10.3 - (RH*0.047))/1.1 = T
-    high_tmp: '{{((((t_perceived_high | float) + bias) + 10.3 - (0.047*humidity_val))/1.1)}}'
-    low_tmp: '{{((((t_perceived_low | float) + bias) + 10.3 - (0.047*humidity_val))/1.1)}}'
+    high_tmp: '{{(((t_perceived_high | float) + 10.3 - (0.047*humidity_val))/1.1) + bias}}'
+    low_tmp: '{{(((t_perceived_low | float) + 10.3 - (0.047*humidity_val))/1.1) + bias}}'
   sequence:
   - wait_template: '{{ state_attr(trg_thermostat,"hvac_action") == None }}'
-    timeout: '00:00:30'
+    timeout: '00:05:00'
     continue_on_timeout: true
   - service: climate.set_temperature
     data:
-      target_temp_high: '{{high_tmp | round(0)}}'
-      target_temp_low: '{{low_tmp | round(0)}}'
+      target_temp_high: '{{high_tmp | round(0,"floor")}}'
+      target_temp_low: '{{low_tmp | round(0,"ceil")}}'
     target:
       entity_id: '{{ trg_thermostat }}'
   mode: single
