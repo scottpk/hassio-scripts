@@ -75,8 +75,8 @@ set_the_thermostat_based_on_real_feel:
     # HI = 1.1T - 10.3 + (RH*0.047)
     # HI + 10.3 - (RH*0.047)= 1.1T
     # (HI + 10.3 - (RH*0.047))/1.1 = T
-    high_tmp: '{{(((t_perceived_high | float) + 10.3 - (0.047*humidity_val))/1.1) + bias}}'
-    low_tmp: '{{(((t_perceived_low | float) + 10.3 - (0.047*humidity_val))/1.1) + bias}}'
+    high_tmp: '{{(((t_perceived_high | float) + 10.3 - (0.047*humidity_val))/1.1) + bias_high}}'
+    low_tmp: '{{(((t_perceived_low | float) + 10.3 - (0.047*humidity_val))/1.1) + bias_low}}'
   sequence:
   - wait_template: >-
       {{ state_attr(trg_thermostat,"hvac_action") == None or
